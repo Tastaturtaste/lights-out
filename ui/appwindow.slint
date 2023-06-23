@@ -1,0 +1,45 @@
+component Tile inherits Rectangle {
+    background: Colors.grey;
+    in property <color> light_color;
+    callback clicked <=> touch_area.clicked;
+    touch_area := TouchArea{}
+    inner := Rectangle {
+        width: 50%;
+        height: 50%;
+        background: light-color;
+    }
+}
+
+export component ButtonField inherits Rectangle{
+    in-out property <int> size: 3;
+    private property <float> pad_pct: 0.05;
+    private property <length> pad_width: pad_pct * self.width;
+    private property <length> pad_height: pad_pct * self.height;
+    private property <length> button_width: ((1 - (size + 1) * pad_pct) / size) * self.width;
+    private property <length> button_height: ((1 - (size + 1) * pad_pct) / size) * self.height;
+    callback lit_from_activated([bool]) -> [bool];
+    private property <int> N: size*size;
+    private property <[bool]> activated: [false];
+    private property <[bool]> lit: [false];
+    
+    for tile[idx] in N: Tile{
+        width: button_width;
+        height: button_height;
+        x: pad_width + mod(idx, size) * (self.width + pad_width);
+        y: pad_height + floor(idx / size) * (self.height + pad_height);
+        light-color: lit[idx] ? Colors.cyan : Colors.darkcyan;
+        clicked => {
+            parent.activated[idx] = !parent.activated[idx];
+            parent.lit = parent.lit_from_activated(parent.activated); 
+        }
+    }
+}
+
+export component LightsOut inherits Window {
+    preferred-width: 340px;
+    preferred-height: 340px;
+    callback lit_from_activated <=> button_field.lit_from_activated;
+    button_field := ButtonField {
+        background: Colors.black;
+    }
+}

@@ -1,3 +1,4 @@
+import { Button } from "std-widgets.slint";
 component Tile inherits Rectangle {
     background: Colors.grey;
     in property <color> light_color;
@@ -17,10 +18,9 @@ export component ButtonField inherits Rectangle{
     private property <length> pad_height: pad_pct * self.height;
     private property <length> button_width: ((1 - (size + 1) * pad_pct) / size) * self.width;
     private property <length> button_height: ((1 - (size + 1) * pad_pct) / size) * self.height;
-    callback lit_from_activated([bool]) -> [bool];
+    callback notify_tile_clicked(int, int) -> [bool];
     private property <int> N: size*size;
-    private property <[bool]> activated: [false];
-    private property <[bool]> lit: [false];
+    private property <[bool]> lit;
     
     for tile[idx] in N: Tile{
         width: button_width;
@@ -29,8 +29,7 @@ export component ButtonField inherits Rectangle{
         y: pad_height + floor(idx / size) * (self.height + pad_height);
         light-color: lit[idx] ? Colors.cyan : Colors.darkcyan;
         clicked => {
-            parent.activated[idx] = !parent.activated[idx];
-            parent.lit = parent.lit_from_activated(parent.activated); 
+            parent.lit = parent.notify_tile_clicked(mod(idx,size), floor(idx/size)); 
         }
     }
 }
@@ -38,8 +37,9 @@ export component ButtonField inherits Rectangle{
 export component LightsOut inherits Window {
     preferred-width: 340px;
     preferred-height: 340px;
-    callback lit_from_activated <=> button_field.lit_from_activated;
     button_field := ButtonField {
         background: Colors.black;
     }
+    callback notify_tile_clicked <=> button_field.notify_tile_clicked;
+    in-out property <int> button_field_size <=> button_field.size;
 }

@@ -1,4 +1,4 @@
-import { Button } from "std-widgets.slint";
+import { Button , LineEdit} from "std-widgets.slint";
 component Tile inherits Rectangle {
     background: Colors.grey;
     in property <color> light_color;
@@ -13,14 +13,15 @@ component Tile inherits Rectangle {
 
 export component ButtonField inherits Rectangle{
     in-out property <int> size: 3;
-    private property <float> pad_pct: 0.05;
-    private property <length> pad_width: pad_pct * self.width;
-    private property <length> pad_height: pad_pct * self.height;
-    private property <length> button_width: ((1 - (size + 1) * pad_pct) / size) * self.width;
-    private property <length> button_height: ((1 - (size + 1) * pad_pct) / size) * self.height;
-    callback notify_tile_clicked(int, int) -> [bool];
+    private property <float> pad_pct: 0.10;
+    private property <length> pad_width: (pad_pct * self.width) / (size + 1);
+    private property <length> pad_height: (pad_pct * self.height) / (size + 1);
+    private property <length> button_width: ((1-pad_pct) * self.width) / size;
+    private property <length> button_height: ((1-pad_pct) * self.height) / size;
+    callback notify_tile_clicked(int, int);
     private property <int> N: size*size;
-    private property <[bool]> lit;
+    in property <[bool]> lit;
+    in property <[bool]> switch_to_solve;
     
     for tile[idx] in N: Tile{
         width: button_width;
@@ -28,8 +29,10 @@ export component ButtonField inherits Rectangle{
         x: pad_width + mod(idx, size) * (self.width + pad_width);
         y: pad_height + floor(idx / size) * (self.height + pad_height);
         light-color: lit[idx] ? Colors.cyan : Colors.darkcyan;
+        border-color: switch_to_solve[idx] ? Colors.red : Colors.transparent;
+        border-width: (self.width + self.height) * 2%;
         clicked => {
-            parent.lit = parent.notify_tile_clicked(mod(idx,size), floor(idx/size)); 
+            parent.notify_tile_clicked(mod(idx,size), floor(idx/size));
         }
     }
 }
@@ -37,9 +40,29 @@ export component ButtonField inherits Rectangle{
 export component LightsOut inherits Window {
     preferred-width: 340px;
     preferred-height: 340px;
-    button_field := ButtonField {
-        background: Colors.black;
+    VerticalLayout {
+        button_field := ButtonField {
+            background: Colors.black;
+        }
+        HorizontalLayout {
+            reset_button := Button { 
+                text: "Reset";
+            }
+            resize_field := LineEdit { 
+                horizontal-alignment: center;
+                placeholder-text: "\{root.button_field_size}";
+            }
+            solve_button := Button {
+                text: "Solve";
+            }
+        }
     }
     callback notify_tile_clicked <=> button_field.notify_tile_clicked;
+    callback notify_reset_clicked <=> reset_button.clicked;
+    callback notify_solve_clicked <=> solve_button.clicked;
+    callback notify_resize_request <=> resize_field.accepted;
     in-out property <int> button_field_size <=> button_field.size;
+    in property <[bool]> button_field_lights <=> button_field.lit;
+    out property <string> requested_size <=> resize_field.text;
+    in property <[bool]> button_field_switch_to_solve <=> button_field.switch_to_solve;
 }

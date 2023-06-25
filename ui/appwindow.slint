@@ -1,4 +1,4 @@
-import { Button , LineEdit} from "std-widgets.slint";
+import { Button , LineEdit, CheckBox, HorizontalBox, VerticalBox} from "std-widgets.slint";
 component Tile inherits Rectangle {
     background: Colors.grey;
     in property <color> light_color;
@@ -38,29 +38,50 @@ export component ButtonField inherits Rectangle{
 }
 
 export component LightsOut inherits Window {
-    preferred-width: 340px;
-    preferred-height: 340px;
-    VerticalLayout {
+    HorizontalBox {
         button_field := ButtonField {
             background: Colors.black;
+            preferred-width: 340px;
+            preferred-height: 340px;
         }
-        HorizontalLayout {
+        menu_bar := VerticalBox {
+            Rectangle {}
             reset_button := Button { 
                 text: "Reset";
             }
             resize_field := LineEdit { 
                 horizontal-alignment: center;
-                placeholder-text: "\{root.button_field_size}";
+                placeholder-text: "Field size";
+                max-width: 100px;
             }
             solve_button := Button {
                 text: "Solve";
             }
+            individual_lights_state_select := Button{
+                clicked => {
+                    root.switch-individual-lights = !root.switch-individual-lights; 
+                    root.notify-switch-individual-lights-clicked(root.switch-individual-lights);
+                }
+                text: ""; // Set default value so states work properly
+                width: 130px;
+            }
+            Rectangle {}
         }
     }
+    states [
+        switch-individual-lights when root.switch-individual-lights: {
+            individual_lights_state_select.text: "Switch lights\n on click";
+        }
+        switch-activations when !root.switch-individual-lights: {
+            individual_lights_state_select.text: "Switch activations\n on click";
+        }
+    ]
+    out property <bool> switch_individual_lights: false;
     callback notify_tile_clicked <=> button_field.notify_tile_clicked;
     callback notify_reset_clicked <=> reset_button.clicked;
     callback notify_solve_clicked <=> solve_button.clicked;
     callback notify_resize_request <=> resize_field.accepted;
+    callback notify_switch_individual_lights_clicked(bool);
     in-out property <int> button_field_size <=> button_field.size;
     in property <[bool]> button_field_lights <=> button_field.lit;
     out property <string> requested_size <=> resize_field.text;

@@ -55,6 +55,9 @@ export component LightsOut inherits Window {
                 placeholder-text: "Field size";
                 max-width: 100px;
             }
+            randomize_button := Button{
+                text: "Randomize";
+            }
             solve_button := Button {
                 text: "Solve";
             }
@@ -83,6 +86,7 @@ export component LightsOut inherits Window {
     callback notify_solve_clicked <=> solve_button.clicked;
     callback notify_resize_request <=> resize_field.accepted;
     callback notify_switch_individual_lights_clicked(bool);
+    callback notify_randomize_clicked <=> randomize_button.clicked;
     in-out property <int> button_field_size <=> button_field.size;
     in property <[bool]> button_field_lights <=> button_field.lit;
     out property <string> requested_size <=> resize_field.text;

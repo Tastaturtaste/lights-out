@@ -1,4 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+use rand::rngs::SmallRng;
+use rand::{Rng, SeedableRng};
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
@@ -23,13 +25,16 @@ impl LightsOutState {
     }
     fn resize(&mut self, size: usize) {
         self.size = size;
+        let n = size * size;
+        self.activations.resize(n, false);
+        self.lights.resize(n, false);
+        self.switch_to_solve.resize(n, false);
         self.deactivate_all();
     }
     fn deactivate_all(&mut self) {
-        let n = self.size * self.size;
-        self.activations = vec![false; n];
-        self.lights = vec![false; n];
-        self.switch_to_solve = vec![false; n];
+        self.activations = self.activations.iter().map(|_| false).collect();
+        self.lights = self.lights.iter().map(|_| false).collect();
+        self.switch_to_solve = self.switch_to_solve.iter().map(|_| false).collect();
     }
 }
 
@@ -133,7 +138,7 @@ fn main() -> Result<(), slint::PlatformError> {
         }
     });
     ui.on_notify_switch_individual_lights_clicked({
-        let state_ref = lights_out_state;
+        let state_ref = lights_out_state.clone();
         move |switch_individual_lights_on_click: bool| {
             let mut lights_out_state = state_ref.borrow_mut();
             // When switching to individual light mode nothing special has to be done.
@@ -145,6 +150,32 @@ fn main() -> Result<(), slint::PlatformError> {
             lights_out_state.activations = solve_switch_system(
                 build_light_system_matrix(lights_out_state.size),
                 lights_out_state.lights.clone(),
+            );
+        }
+    });
+    ui.on_notify_randomize_clicked({
+        let state_ref = lights_out_state;
+        let ui_handle = ui.as_weak();
+        let mut rng = SmallRng::from_entropy();
+        move || {
+            let ui = ui_handle.unwrap();
+            let mut lights_out_state = state_ref.borrow_mut();
+            lights_out_state.deactivate_all();
+            for light in &mut lights_out_state.lights {
+                *light = rng.gen::<bool>();
+            }
+            lights_out_state.activations = solve_switch_system(
+                build_light_system_matrix(lights_out_state.size),
+                lights_out_state.lights.clone(),
+            );
+            ui.set_button_field_lights(
+                Rc::new(slint::VecModel::from(lights_out_state.lights.clone())).into(),
+            );
+            ui.set_button_field_switch_to_solve(
+                Rc::new(slint::VecModel::from(
+                    lights_out_state.switch_to_solve.clone(),
+                ))
+                .into(),
             );
         }
     });
